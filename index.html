@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Highview P&C — Initiative Priority Matrix</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f8fa; color: #1a1a2e; min-height: 100vh; }
+  .wrap { padding: 24px; max-width: 1140px; margin: 0 auto; }
+
+  .hdr-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #2E7D8C; font-weight: 700; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; color: #1B3A5C; letter-spacing: -0.5px; margin-bottom: 5px; }
+  .subtitle { font-size: 12.5px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+
+  .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
+  .tab { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: #1B3A5C; color: #fff; }
+  .tab.inactive { background: #e4e8ee; color: #555; }
+  .tab.inactive:hover { background: #d5dae4; }
+
+  .chart-area { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  .chart-card { flex: 1 1 600px; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(27,58,92,0.09); padding: 18px; }
+  .legend-card { flex: 0 0 195px; min-width: 175px; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(27,58,92,0.09); padding: 18px; }
+
+  .leg-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 12px; }
+  .leg-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .leg-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .leg-text { font-size: 11.5px; color: #444; line-height: 1.3; }
+  .leg-divider { border: none; border-top: 1px solid #eee; margin: 14px 0; }
+  .q-row { display: flex; gap: 8px; margin-bottom: 9px; align-items: flex-start; }
+  .q-square { width: 9px; height: 9px; border-radius: 2px; margin-top: 3px; flex-shrink: 0; }
+  .q-name { font-size: 11px; font-weight: 700; }
+  .q-sub { font-size: 10px; color: #999; margin-top: 1px; }
+  .edit-hint { font-size: 10.5px; color: #aaa; margin-top: 8px; line-height: 1.6; font-style: italic; }
+
+  /* Inline editing for quadrant labels */
+  .ql-name {
+    cursor: pointer; font-weight: 700; font-size: 9.5px; letter-spacing: 1.3px;
+    display: block; text-align: center; padding: 2px 4px; border-radius: 3px;
+    opacity: 0.72;
+  }
+  .ql-name:hover { opacity: 1; text-decoration: underline dotted; }
+  .ql-sub {
+    cursor: pointer; font-size: 8.5px; display: block; text-align: center;
+    padding: 1px 4px; border-radius: 3px; opacity: 0.48; margin-top: 2px;
+  }
+  .ql-sub:hover { opacity: 0.8; text-decoration: underline dotted; }
+  .ql-input {
+    border: none; border-bottom: 2px solid; background: transparent; outline: none;
+    text-align: center; font-family: inherit; display: block; margin: 0 auto;
+  }
+
+  /* Data table */
+  .data-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(27,58,92,0.09); overflow: hidden; }
+  .tbl-hdr { padding: 16px 20px 12px; border-bottom: 1px solid #eef0f3; }
+  .tbl-hdr-title { font-weight: 700; font-size: 14px; color: #1B3A5C; }
+  .tbl-hdr-sub { font-size: 11.5px; color: #888; margin-top: 3px; }
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { padding: 10px 14px; text-align: left; font-weight: 700; font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase; color: #555; border-bottom: 1px solid #dde2e8; background: #f0f4f8; white-space: nowrap; }
+  th.c { text-align: center; }
+  td { padding: 9px 14px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+  td.c { text-align: center; }
+  .pillar-badge { border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; color: #fff; display: inline-block; }
+  .score-btn { border-radius: 6px; padding: 5px 14px; cursor: pointer; font-size: 13px; font-weight: 700; border: 1.5px solid transparent; transition: all 0.12s; font-family: inherit; min-width: 42px; }
+  .score-input { width: 50px; text-align: center; border-radius: 6px; padding: 5px 0; font-size: 13px; font-weight: 700; outline: none; border: 2px solid; font-family: inherit; }
+
+  #tooltip {
+    position: fixed; pointer-events: none;
+    background: #1B3A5C; border-radius: 8px; padding: 11px 14px 11px 18px;
+    color: #fff; display: none; z-index: 9999;
+    min-width: 200px; max-width: 260px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  #t-bar { width: 5px; position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px 0 0 8px; }
+  #t-id    { font-weight: 700; font-size: 10px; color: #7fb8d4; margin-bottom: 4px; letter-spacing: 0.5px; }
+  #t-name  { color: #dce8f0; font-size: 11px; margin-bottom: 5px; line-height: 1.4; }
+  #t-scores { color: #7fb8d4; font-size: 10px; }
+
+  @media print {
+    .tabs, #panel-data { display: none !important; }
+    body { background: #fff; }
+    .chart-card, .legend-card { box-shadow: none; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr-label">Highview · People &amp; Culture Strategy</div>
+  <h1>Initiative Priority Matrix</h1>
+  <p class="subtitle">
+    All 32 initiatives plotted by <strong>Impact</strong> vs <strong>Effort</strong>, rated 1–4.
+    Switch to <strong>Edit Data</strong> to update scores.
+    <strong>Click any quadrant label</strong> directly on the chart to rename it.
+  </p>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-chart" onclick="showTab('chart')">📊 &nbsp;Priority Matrix</button>
+    <button class="tab inactive" id="tab-data"  onclick="showTab('data')">📋 &nbsp;Edit Data</button>
+  </div>
+
+  <div id="panel-chart" class="chart-area">
+    <div class="chart-card">
+      <svg id="scatter" width="100%" viewBox="0 0 700 560" style="display:block;"></svg>
+    </div>
+    <div class="legend-card">
+      <div class="leg-title">Pillars</div>
+      <div id="legend-pillars"></div>
+      <hr class="leg-divider">
+      <div class="leg-title">Quadrants</div>
+      <div id="legend-quads"></div>
+      <hr class="leg-divider">
+      <div class="edit-hint">
+        Click any quadrant label on the chart to rename it.<br><br>
+        Dotted lines on the chart connect spread points back to their true position.
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-data" style="display:none;">
+    <div class="data-card">
+      <div class="tbl-hdr">
+        <div class="tbl-hdr-title">Initiative Ratings</div>
+        <div class="tbl-hdr-sub">Click any Impact or Effort score to edit (1–4). The chart updates automatically.</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="c">#</th>
+              <th>Initiative</th>
+              <th class="c">Pillar</th>
+              <th class="c">Impact (1–4)</th>
+              <th class="c">Effort (1–4)</th>
+            </tr>
+          </thead>
+          <tbody id="data-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip">
+  <div id="t-bar"></div>
+  <div id="t-id"></div>
+  <div id="t-name"></div>
+  <div id="t-scores"></div>
+</div>
+
+<script>
+const PILLARS = {
+  P1: { bg:"#2E7D8C", light:"#e0f4f7", label:"Talent & Recruitment" },
+  P2: { bg:"#1B3A5C", light:"#dce6f0", label:"Onboarding" },
+  P3: { bg:"#4A7C59", light:"#e2f0e6", label:"Learning & Development" },
+  P4: { bg:"#8B5E3C", light:"#f4ece4", label:"Engagement & Retention" },
+  P5: { bg:"#6B4C8A", light:"#ede5f4", label:"Performance & Remuneration" },
+  P6: { bg:"#C0392B", light:"#fce8e6", label:"Leadership & Culture" },
+  P7: { bg:"#2C6E49", light:"#e1f0e8", label:"Departures & Knowledge" },
+  P8: { bg:"#7F6000", light:"#f5efe0", label:"Governance & Compliance" },
+};
+
+let QUADS = [
+  { color:"#1a6e2e", fill:"#f4fff6", name:"DO NOW",        sub:"High value · Low effort",  qx:0.25, qy:0.82 },
+  { color:"#1B3A5C", fill:"#f0f4ff", name:"DO NEXT",       sub:"High value · High effort", qx:0.75, qy:0.82 },
+  { color:"#777",    fill:"#fafafa",  name:"DO LATER",      sub:"Low value · Low effort",   qx:0.25, qy:0.18 },
+  { color:"#b94040", fill:"#fff5f5",  name:"DON'T DO YET",  sub:"High effort · Low value",  qx:0.75, qy:0.18 },
+];
+
+let DATA = [
+  {id:1,  name:"Pre-boarding digital experience",                        pillar:"P2", impact:3, effort:3},
+  {id:2,  name:"Buddy / Mentor program for new starters",                pillar:"P2", impact:4, effort:2},
+  {id:3,  name:"Manager onboarding and training toolkit",                pillar:"P2", impact:4, effort:4},
+  {id:4,  name:"Formalised EVP",                                         pillar:"P1", impact:3, effort:2},
+  {id:5,  name:"Structured interview process and templates",             pillar:"P1", impact:4, effort:2},
+  {id:6,  name:"Employee referral program",                              pillar:"P1", impact:3, effort:1},
+  {id:7,  name:"Workforce planning and proactive sourcing strategy",     pillar:"P1", impact:3, effort:3},
+  {id:8,  name:"Individual Development Plans (IDPs)",                    pillar:"P3", impact:3, effort:3},
+  {id:9,  name:"Defined career pathways and progression frameworks",     pillar:"P3", impact:4, effort:2},
+  {id:10, name:"Annual L&D budget per person",                           pillar:"P3", impact:3, effort:1},
+  {id:11, name:"Leadership development program",                         pillar:"P3", impact:4, effort:4},
+  {id:12, name:"Mentoring and coaching program",                         pillar:"P3", impact:4, effort:4},
+  {id:13, name:"Structured learning program for graduates and key roles",pillar:"P3", impact:4, effort:4},
+  {id:14, name:"Regular employee engagement / pulse surveys",            pillar:"P4", impact:3, effort:2},
+  {id:15, name:"Employee Net Promoter Score (eNPS) tracking",            pillar:"P4", impact:4, effort:1},
+  {id:16, name:"Employee Wellbeing Program / EAP",                       pillar:"P4", impact:4, effort:1},
+  {id:17, name:"Recognition and reward program (non-monetary)",          pillar:"P4", impact:3, effort:3},
+  {id:18, name:"Employee voice channel",                                 pillar:"P4", impact:3, effort:1},
+  {id:19, name:"OKRs / consistent goal-setting methodology",             pillar:"P5", impact:3, effort:3},
+  {id:20, name:"Continuous feedback culture (not just annual reviews)",  pillar:"P5", impact:3, effort:3},
+  {id:21, name:"Benefits review and competitive benchmarking",           pillar:"P5", impact:3, effort:2},
+  {id:22, name:"Leadership capability framework",                        pillar:"P6", impact:4, effort:4},
+  {id:23, name:"People-manager training program",                        pillar:"P6", impact:4, effort:4},
+  {id:24, name:"Accountability framework for leaders",                   pillar:"P6", impact:4, effort:4},
+  {id:25, name:"Culture dashboard / people metrics report to leadership",pillar:"P6", impact:4, effort:4},
+  {id:26, name:"All hands / company-wide meetings",                      pillar:"P6", impact:3, effort:2},
+  {id:27, name:"Knowledge transfer plans",                               pillar:"P7", impact:4, effort:3},
+  {id:28, name:"Voluntary turnover tracking and analysis",               pillar:"P7", impact:3, effort:2},
+  {id:29, name:"HR policy framework and compliance calendar",            pillar:"P8", impact:3, effort:3},
+  {id:30, name:"Gender diversity reporting and analysis by role level",  pillar:"P8", impact:3, effort:2},
+  {id:31, name:"Structured performance and conduct management process",  pillar:"P8", impact:3, effort:2},
+  {id:32, name:"Stay interviews",                                        pillar:"P7", impact:4, effort:2},
+];
+
+// ─── LEGEND ──────────────────────────────────────────────────────────────────
+function buildLegend() {
+  const lp = document.getElementById('legend-pillars');
+  lp.innerHTML = '';
+  Object.entries(PILLARS).forEach(([k,v]) => {
+    lp.innerHTML += `<div class="leg-row">
+      <div class="leg-dot" style="background:${v.bg}">${k.replace('P','')}</div>
+      <span class="leg-text">${v.label}</span></div>`;
+  });
+  const lq = document.getElementById('legend-quads');
+  lq.innerHTML = '';
+  QUADS.forEach(q => {
+    lq.innerHTML += `<div class="q-row">
+      <div class="q-square" style="background:${q.color}"></div>
+      <div><div class="q-name" style="color:${q.color}">${q.name}</div>
+      <div class="q-sub">${q.sub}</div></div></div>`;
+  });
+}
+
+// ─── SPREAD: sunflower layout for overlapping clusters ───────────────────────
+function spreadPoints(data) {
+  const groups = {};
+  data.forEach(d => {
+    const k = `${d.effort}-${d.impact}`;
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(d);
+  });
+  const out = [];
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  Object.values(groups).forEach(g => {
+    const n = g.length;
+    // Scale spread based on cluster density
+    const baseR = n === 1 ? 0 : n <= 2 ? 0.16 : n <= 4 ? 0.20 : n <= 6 ? 0.24 : 0.28;
+    g.forEach((d, i) => {
+      if (n === 1) {
+        out.push({...d, jx: d.effort, jy: d.impact});
+      } else {
+        // i=0 stays near centre but slightly offset
+        const r = i === 0 ? baseR * 0.3 : baseR * (0.5 + 0.5 * Math.sqrt(i / (n-1)));
+        const angle = i * golden + (d.effort + d.impact) * 0.5; // seed angle by position
+        out.push({...d, jx: d.effort + r * Math.cos(angle), jy: d.impact + r * Math.sin(angle)});
+      }
+    });
+  });
+  return out;
+}
+
+// ─── CHART ───────────────────────────────────────────────────────────────────
+const W=700, H=560, PL=62, PR=32, PT=42, PB=60;
+const CW=W-PL-PR, CH=H-PT-PB;
+// Map 1-4 across full axis with padding so edge points aren't clipped
+const PAD_FRAC = 0.08;
+const toX = v => (((v-1)/3) * (1-2*PAD_FRAC) + PAD_FRAC) * CW;
+const toY = v => (1 - (((v-1)/3) * (1-2*PAD_FRAC) + PAD_FRAC)) * CH;
+const NS = 'http://www.w3.org/2000/svg';
+
+function mk(tag, attrs, text) {
+  const el = document.createElementNS(NS, tag);
+  Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v));
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+// Build an editable quadrant label as SVG foreignObject
+function makeQLabelFO(q, idx) {
+  const tx = PL + q.qx * CW;
+  const ty = PT + (1 - q.qy) * CH;
+  const fo = document.createElementNS(NS, 'foreignObject');
+  fo.setAttribute('x', tx - 75); fo.setAttribute('y', ty - 26);
+  fo.setAttribute('width', '150'); fo.setAttribute('height', '42');
+  fo.setAttribute('overflow', 'visible');
+
+  const div = document.createElement('div');
+
+  function makeSpan(field, cls, style) {
+    const span = document.createElement('span');
+    span.className = cls;
+    span.style.cssText = style + `color:${q.color};`;
+    span.textContent = q[field];
+    span.title = 'Click to edit';
+    span.addEventListener('click', e => {
+      e.stopPropagation();
+      const inp = document.createElement('input');
+      inp.className = 'ql-input';
+      inp.style.cssText = `color:${q.color};border-color:${q.color};` +
+        (field==='name' ? 'font-weight:700;font-size:9px;width:130px;letter-spacing:0.8px;' : 'font-size:8px;width:120px;');
+      inp.value = q[field];
+      span.replaceWith(inp);
+      inp.focus(); inp.select();
+      const finish = () => {
+        const val = inp.value.trim() || q[field];
+        q[field] = val;
+        span.textContent = val;
+        inp.replaceWith(span);
+        buildLegend();
+      };
+      inp.addEventListener('blur', finish);
+      inp.addEventListener('keydown', e2 => {
+        if (e2.key === 'Enter') finish();
+        if (e2.key === 'Escape') inp.replaceWith(span);
+      });
+    });
+    return span;
+  }
+
+  div.appendChild(makeSpan('name', 'ql-name', ''));
+  const br = document.createElement('br');
+  div.appendChild(br);
+  div.appendChild(makeSpan('sub', 'ql-sub', ''));
+  fo.appendChild(div);
+  return fo;
+}
+
+function drawChart() {
+  const svg = document.getElementById('scatter');
+  svg.innerHTML = '';
+  const jd = spreadPoints(DATA);
+
+  // Quadrant fills
+  const midX = PL + CW/2, midY = PT + CH/2;
+  [
+    {q:QUADS[0], x:PL,    y:PT,    w:CW/2, h:CH/2},
+    {q:QUADS[1], x:midX,  y:PT,    w:CW/2, h:CH/2},
+    {q:QUADS[2], x:PL,    y:midY,  w:CW/2, h:CH/2},
+    {q:QUADS[3], x:midX,  y:midY,  w:CW/2, h:CH/2},
+  ].forEach(({q,x,y,w,h}) =>
+    svg.appendChild(mk('rect',{x,y,width:w,height:h,fill:q.fill}))
+  );
+
+  // Grid
+  [1,1.5,2,2.5,3,3.5,4].forEach(v => {
+    const a = Number.isInteger(v) ? '0.35' : '0.14';
+    svg.appendChild(mk('line',{x1:PL+toX(v),y1:PT,x2:PL+toX(v),y2:PT+CH,stroke:'#b8c8d8','stroke-width':'0.6',opacity:a}));
+    svg.appendChild(mk('line',{x1:PL,y1:PT+toY(v),x2:PL+CW,y2:PT+toY(v),stroke:'#b8c8d8','stroke-width':'0.6',opacity:a}));
+  });
+
+  // Midlines
+  svg.appendChild(mk('line',{x1:midX,y1:PT,x2:midX,y2:PT+CH,stroke:'#8fa8be','stroke-width':'2','stroke-dasharray':'6,4'}));
+  svg.appendChild(mk('line',{x1:PL,y1:midY,x2:PL+CW,y2:midY,stroke:'#8fa8be','stroke-width':'2','stroke-dasharray':'6,4'}));
+
+  // Editable quadrant labels
+  QUADS.forEach((q,i) => svg.appendChild(makeQLabelFO(q,i)));
+
+  // Border
+  svg.appendChild(mk('rect',{x:PL,y:PT,width:CW,height:CH,fill:'none',stroke:'#aabccc','stroke-width':'1.5'}));
+
+  // Tick labels
+  [1,2,3,4].forEach(v => {
+    svg.appendChild(mk('text',{x:PL+toX(v),y:PT+CH+20,'text-anchor':'middle',fill:'#777','font-size':'12'},String(v)));
+    svg.appendChild(mk('text',{x:PL-14,y:PT+toY(v)+4.5,'text-anchor':'end',fill:'#777','font-size':'12'},String(v)));
+  });
+
+  // Axis titles
+  svg.appendChild(mk('text',{x:PL+CW/2,y:H-8,'text-anchor':'middle',fill:'#444','font-size':'12.5','font-weight':'600'},'EFFORT  →  (1 = Low  ·  4 = High)'));
+  svg.appendChild(mk('text',{x:15,y:PT+CH/2,'text-anchor':'middle',fill:'#444','font-size':'12.5','font-weight':'600',transform:`rotate(-90,15,${PT+CH/2})`},'IMPACT  →  (1 = Low  ·  4 = High)'));
+
+  // Connector lines (spread → true position)
+  jd.forEach(d => {
+    const tx = PL+toX(d.effort), ty = PT+toY(d.impact);
+    const sx = PL+toX(d.jx),    sy = PT+toY(d.jy);
+    if (Math.hypot(sx-tx, sy-ty) > 4) {
+      svg.appendChild(mk('line',{x1:tx,y1:ty,x2:sx,y2:sy,
+        stroke:PILLARS[d.pillar].bg,'stroke-width':'0.8',opacity:'0.22','stroke-dasharray':'2,3'}));
+    }
+  });
+
+  // True-position anchor dots
+  const truePositions = {};
+  jd.forEach(d => {
+    const k = `${d.effort}-${d.impact}`;
+    if (!truePositions[k]) {
+      truePositions[k] = true;
+      svg.appendChild(mk('circle',{
+        cx:PL+toX(d.effort), cy:PT+toY(d.impact), r:'3',
+        fill:'#8fa8be', opacity:'0.35'
+      }));
+    }
+  });
+
+  // Data point circles
+  jd.forEach(d => {
+    const cx = PL + toX(d.jx);
+    const cy = PT + toY(d.jy);
+    const c = PILLARS[d.pillar];
+    const g = mk('g',{cursor:'pointer'});
+
+    const glow   = mk('circle',{cx,cy,r:'16',fill:c.bg,opacity:'0.12'});
+    const circle = mk('circle',{cx,cy,r:'13',fill:c.bg,opacity:'0.90'});
+    const border = mk('circle',{cx,cy,r:'13',fill:'none',stroke:'rgba(255,255,255,0.45)','stroke-width':'1.5'});
+    const lbl    = mk('text',  {x:cx,y:cy+4.5,'text-anchor':'middle',fill:'#fff','font-size':'10.5','font-weight':'700'},String(d.id));
+
+    g.appendChild(glow); g.appendChild(circle); g.appendChild(border); g.appendChild(lbl);
+
+    g.addEventListener('mouseenter', () => {
+      glow.setAttribute('r','20'); glow.setAttribute('opacity','0.18');
+      circle.setAttribute('r','15'); circle.setAttribute('opacity','1');
+      border.setAttribute('r','15'); border.setAttribute('stroke','rgba(255,255,255,0.7)'); border.setAttribute('stroke-width','2');
+      lbl.setAttribute('font-size','12');
+      const tip = document.getElementById('tooltip');
+      document.getElementById('t-bar').style.background = c.bg;
+      document.getElementById('t-id').textContent    = `#${d.id}  ·  ${d.pillar}: ${PILLARS[d.pillar].label}`;
+      document.getElementById('t-name').textContent  = d.name;
+      document.getElementById('t-scores').textContent = `Impact: ${d.impact}  ·  Effort: ${d.effort}`;
+      tip.style.display = 'block';
+    });
+    g.addEventListener('mousemove', e => {
+      const tip = document.getElementById('tooltip');
+      tip.style.left = Math.min(e.clientX+16, window.innerWidth-265) + 'px';
+      tip.style.top  = (e.clientY - 12) + 'px';
+    });
+    g.addEventListener('mouseleave', () => {
+      glow.setAttribute('r','16'); glow.setAttribute('opacity','0.12');
+      circle.setAttribute('r','13'); circle.setAttribute('opacity','0.90');
+      border.setAttribute('r','13'); border.setAttribute('stroke','rgba(255,255,255,0.45)'); border.setAttribute('stroke-width','1.5');
+      lbl.setAttribute('font-size','10.5');
+      document.getElementById('tooltip').style.display = 'none';
+    });
+    svg.appendChild(g);
+  });
+}
+
+// ─── DATA TABLE ──────────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('data-tbody');
+  tbody.innerHTML = '';
+  DATA.forEach((d, idx) => {
+    const c = PILLARS[d.pillar];
+    const tr = document.createElement('tr');
+    tr.style.background = idx%2===0 ? '#fff' : '#fafbfc';
+    tr.innerHTML = `
+      <td class="c" style="font-weight:700;color:${c.bg};font-size:12px">${d.id}</td>
+      <td style="color:#222">${d.name}</td>
+      <td class="c"><span class="pillar-badge" style="background:${c.bg}">${d.pillar}</span></td>
+      <td class="c" id="ci-${d.id}"></td>
+      <td class="c" id="ce-${d.id}"></td>`;
+    tr.addEventListener('mouseenter', () => tr.style.background = c.light);
+    tr.addEventListener('mouseleave', () => tr.style.background = idx%2===0 ? '#fff' : '#fafbfc');
+    tbody.appendChild(tr);
+    renderScore(d.id,'impact');
+    renderScore(d.id,'effort');
+  });
+}
+
+function renderScore(id, field) {
+  const cell = document.getElementById(field==='impact' ? `ci-${id}` : `ce-${id}`);
+  if (!cell) return;
+  const d = DATA.find(x => x.id===id);
+  const c = PILLARS[d.pillar];
+  cell.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'score-btn';
+  btn.textContent = d[field];
+  btn.style.cssText = `background:${c.light};border-color:${c.bg}55;color:${c.bg}`;
+  btn.addEventListener('mouseenter', ()=>{ btn.style.background=c.bg; btn.style.color='#fff'; });
+  btn.addEventListener('mouseleave', ()=>{ btn.style.background=c.light; btn.style.color=c.bg; });
+  btn.addEventListener('click', () => {
+    cell.innerHTML='';
+    const inp = document.createElement('input');
+    inp.className='score-input'; inp.type='number'; inp.min=1; inp.max=4;
+    inp.style.cssText=`border-color:${c.bg};color:${c.bg}`;
+    inp.value=d[field];
+    const commit = () => {
+      const v=parseInt(inp.value);
+      if(!isNaN(v)&&v>=1&&v<=4) d[field]=v;
+      renderScore(id,field); drawChart();
+    };
+    inp.addEventListener('blur', commit);
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') commit(); if(e.key==='Escape') renderScore(id,field); });
+    cell.appendChild(inp);
+    setTimeout(()=>{ inp.focus(); inp.select(); }, 10);
+  });
+  cell.appendChild(btn);
+}
+
+function showTab(tab) {
+  document.getElementById('panel-chart').style.display = tab==='chart' ? 'flex' : 'none';
+  document.getElementById('panel-data').style.display  = tab==='data'  ? 'block' : 'none';
+  document.getElementById('tab-chart').className = 'tab '+(tab==='chart'?'active':'inactive');
+  document.getElementById('tab-data').className  = 'tab '+(tab==='data' ?'active':'inactive');
+}
+
+buildLegend();
+drawChart();
+renderTable();
+</script>
+</body>
+</html>
